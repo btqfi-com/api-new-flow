@@ -26,7 +26,7 @@ https://your-domain.com/merchant
 
 -   **Minimum amount:** $15.00 USD
 -   **Maximum amount:** $2,000.00 USD
--   **Supported currencies:** USD
+-   **Supported currencies:** USD // EUR, RUB soon
 -   **Supported payment methods:** VISA, MASTERCARD
 
 **Note:** Each country may have different minimum and maximum amounts. Check the country details endpoint for specific limits.
@@ -94,11 +94,11 @@ console.log(countryDetails.data.paymentMethods);
         "minAmount": 15,
         "paymentMethods": [
             {
-                "code": "VISA",
+                "code": 65536,
                 "name": "Visa"
             },
             {
-                "code": "MASTERCARD",
+                "code": 131072,
                 "name": "MasterCard"
             }
         ]
@@ -128,11 +128,11 @@ console.log(methods.data);
     "success": true,
     "data": [
         {
-            "code": "VISA",
+            "code": 65536,
             "name": "Visa"
         },
         {
-            "code": "MASTERCARD",
+            "code": 131072,
             "name": "MasterCard"
         }
     ]
@@ -148,7 +148,6 @@ console.log(methods.data);
 const paymentData = {
     amount: 100.0,
     currency: "USD",
-    paymentMethod: "VISA",
     countryCode: "POL",
     successCallback: "https://yoursite.com/success",
     failureCallback: "https://yoursite.com/failure",
@@ -156,6 +155,8 @@ const paymentData = {
     customerEmail: "customer@example.com",
     customerName: "John Doe",
     customerIp: "192.168.1.1",
+    // paymentMethod is optional
+    paymentMethod: "VISA",
 };
 
 const response = await fetch("/merchant/payment", {
@@ -177,15 +178,18 @@ if (result.success) {
 **Request Parameters:**
 
 -   `amount` (number, required): Payment amount (check country limits for min/max)
--   `currency` (string, required): Currency code (USD, EUR)
--   `paymentMethod` (string, required): Payment method code (VISA, MASTERCARD)
--   `countryCode` (string, required): Country code (POL, UKR, etc.)
+-   `currency` (string, required): Currency code (USD)
+-   `countryCode` (string, required): Country code (POL, etc.)
 -   `successCallback` (string, required): URL to redirect after successful payment
 -   `failureCallback` (string, required): URL to redirect after failed payment
 -   `postbackUrl` (string, required): Webhook URL for payment notifications
 -   `customerEmail` (string, required): Customer email address
 -   `customerName` (string, required): Customer full name
 -   `customerIp` (string, required): Customer IP address
+-   `paymentMethod` (string, optional): Payment method code (VISA, MASTERCARD)
+-   `externalClientId` (string, optional): External client identifier
+-   `paymentTimeMaxTimestamp` (number, optional): Maximum payment time timestamp
+-   `paymentTimeRealtiveTimestamp` (number, optional): Relative payment time timestamp
 
 **Response:**
 
@@ -232,191 +236,6 @@ console.log("Payment status:", status.data.status);
 }
 ```
 
-## Complete Integration Example
-
-Here's a complete example of how to integrate payments into your website:
-
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Payment Integration Example</title>
-    </head>
-    <body>
-        <h1>Make a Payment</h1>
-
-        <form id="paymentForm">
-            <div>
-                <label>Country:</label>
-                <select id="country" required>
-                    <option value="">Select country</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Amount:</label>
-                <input type="number" id="amount" step="0.01" value="15" required />
-                <small id="amountLimits">Select a country to see limits</small>
-            </div>
-
-            <div>
-                <label>Payment Method:</label>
-                <select id="paymentMethod" required>
-                    <option value="">Select payment method</option>
-                </select>
-            </div>
-
-            <button type="submit">Pay Now</button>
-        </form>
-
-        <script>
-            const MERCHANT_TOKEN = "YOUR_MERCHANT_TOKEN";
-            const BASE_URL = "https://your-domain.com/merchant";
-
-            const headers = {
-                Authorization: `Bearer ${MERCHANT_TOKEN}`,
-                "Content-Type": "application/json",
-            };
-
-            let countriesData = [];
-
-            // Load countries on page load
-            async function loadCountries() {
-                try {
-                    const response = await fetch(`${BASE_URL}/allowed-countries`, {
-                        headers: headers,
-                    });
-                    const result = await response.json();
-
-                    if (result.success) {
-                        countriesData = result.data;
-                        const countrySelect = document.getElementById("country");
-                        result.data.forEach((country) => {
-                            const option = document.createElement("option");
-                            option.value = country.code;
-                            option.textContent = `${country.country} (${country.currency})`;
-                            countrySelect.appendChild(option);
-                        });
-                    }
-                } catch (error) {
-                    console.error("Failed to load countries:", error);
-                }
-            }
-
-            // Load payment methods
-            async function loadPaymentMethods() {
-                try {
-                    const response = await fetch(`${BASE_URL}/methods`, {
-                        headers: headers,
-                    });
-                    const result = await response.json();
-
-                    if (result.success) {
-                        const methodSelect = document.getElementById("paymentMethod");
-                        result.data.forEach((method) => {
-                            const option = document.createElement("option");
-                            option.value = method.code;
-                            option.textContent = method.name;
-                            methodSelect.appendChild(option);
-                        });
-                    }
-                } catch (error) {
-                    console.error("Failed to load payment methods:", error);
-                }
-            }
-
-            // Update amount limits when country changes
-            document.getElementById("country").addEventListener("change", function () {
-                const countryCode = this.value;
-                const amountInput = document.getElementById("amount");
-                const amountLimits = document.getElementById("amountLimits");
-
-                if (countryCode) {
-                    const country = countriesData.find((c) => c.code === countryCode);
-                    if (country) {
-                        amountInput.min = country.minAmount;
-                        amountInput.max = country.maxAmount;
-                        amountInput.value = country.minAmount;
-                        amountLimits.textContent = `Min: $${country.minAmount}, Max: $${country.maxAmount} ${country.currency}`;
-                    }
-                } else {
-                    amountInput.min = 15;
-                    amountInput.max = 2000;
-                    amountInput.value = 15;
-                    amountLimits.textContent = "Select a country to see limits";
-                }
-            });
-
-            // Handle form submission
-            document.getElementById("paymentForm").addEventListener("submit", async function (e) {
-                e.preventDefault();
-
-                const countryCode = document.getElementById("country").value;
-                const amount = parseFloat(document.getElementById("amount").value);
-                const paymentMethod = document.getElementById("paymentMethod").value;
-
-                if (!countryCode) {
-                    alert("Please select a country");
-                    return;
-                }
-
-                const country = countriesData.find((c) => c.code === countryCode);
-                if (!country) {
-                    alert("Invalid country selected");
-                    return;
-                }
-
-                if (amount < country.minAmount) {
-                    alert(`Minimum amount for ${country.country} is $${country.minAmount}`);
-                    return;
-                }
-
-                if (amount > country.maxAmount) {
-                    alert(`Maximum amount for ${country.country} is $${country.maxAmount}`);
-                    return;
-                }
-
-                const paymentData = {
-                    amount: amount,
-                    currency: country.currency,
-                    paymentMethod: paymentMethod,
-                    countryCode: countryCode,
-                    successCallback: window.location.origin + "/success",
-                    failureCallback: window.location.origin + "/failure",
-                    postbackUrl: window.location.origin + "/webhook",
-                    customerEmail: "customer@example.com",
-                    customerName: "John Doe",
-                    customerIp: "127.0.0.1",
-                };
-
-                try {
-                    const response = await fetch(`${BASE_URL}/payment`, {
-                        method: "POST",
-                        headers: headers,
-                        body: JSON.stringify(paymentData),
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        window.location.href = result.data.paymentUrl;
-                    } else {
-                        alert("Payment creation failed: " + result.message);
-                    }
-                } catch (error) {
-                    console.error("Error creating payment:", error);
-                    alert("Failed to create payment. Please try again.");
-                }
-            });
-
-            // Initialize page
-            loadCountries();
-            loadPaymentMethods();
-        </script>
-    </body>
-</html>
-```
-
 ## Error Handling
 
 ### Common Error Codes
@@ -431,7 +250,7 @@ Here's a complete example of how to integrate payments into your website:
 | `AMOUNT_GREATER_THAN_MAXIMUM`  | Amount is greater than the maximum amount       | Amount above country maximum             | Use amount <= country's maximum amount         | Amount above country-specific maximum         |
 | `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA or MASTERCARD                         | Using "PAYPAL" or other unsupported methods   |
 | `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       | Using lowercase or wrong format (e.g., "pol") |
-| `INVALID_CURRENCY`             | Currency is invalid                             | Unsupported currency code                | Use USD or EUR                                 | Using "GBP" or other unsupported currencies   |
+| `INVALID_CURRENCY`             | Currency is invalid                             | Unsupported currency code                | Use USD                                        | Using "EUR" or other unsupported currencies   |
 | `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     | VISA not available in specific country        |
 | `SOMETHING_WENT_WRONG`         | Something went wrong                            | Internal server error                    | Contact support                                | Database connection issues, server errors     |
 | `TELEWORLD_PROVIDER_ERROR`     | TeleWorld provider error                        | Payment provider error                   | Try again later or contact support             | External payment system down                  |
@@ -486,11 +305,11 @@ async function createPayment(paymentData) {
                     break;
                 case "MISSING_REQUIRED_FIELDS":
                     alert(
-                        "Please fill in all required fields: amount, currency, payment method, country, customer email, and customer name"
+                        "Please fill in all required fields: amount, currency, country, customer email, and customer name"
                     );
                     break;
                 case "INVALID_CURRENCY":
-                    alert("Please select a valid currency (USD or EUR)");
+                    alert("Please use USD currency");
                     break;
                 case "INVALID_COUNTRY_CODE":
                     alert("Please use a valid 3-letter country code (e.g., POL, UKR)");
@@ -575,12 +394,12 @@ function validatePaymentData(data) {
     }
 
     // Validate currency
-    if (!["USD", "EUR"].includes(data.currency)) {
-        throw new Error("Only USD and EUR currencies are supported");
+    if (data.currency !== "USD") {
+        throw new Error("Only USD currency is currently supported");
     }
 
-    // Validate payment method
-    if (!["VISA", "MASTERCARD"].includes(data.paymentMethod)) {
+    // Validate payment method (if provided)
+    if (data.paymentMethod && !["VISA", "MASTERCARD"].includes(data.paymentMethod)) {
         throw new Error("Only VISA and MasterCard payment methods are supported");
     }
 
