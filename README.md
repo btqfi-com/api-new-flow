@@ -26,8 +26,10 @@ https://your-domain.com/merchant
 
 -   **Minimum amount:** $15.00 USD
 -   **Maximum amount:** $2,000.00 USD
--   **Supported currencies:** USD
+-   **Supported currencies:** USD, EUR
 -   **Supported payment methods:** VISA, MASTERCARD
+
+**Note:** Each country may have different minimum and maximum amounts. Check the country details endpoint for specific limits.
 
 ## API Endpoints
 
@@ -55,8 +57,10 @@ console.log(countries.data);
         {
             "country": "Poland",
             "code": "POL",
-            "currncies": ["USD", "EUR"]
-        },
+            "currency": "USD",
+            "maxAmount": 2000,
+            "minAmount": 15
+        }
     ]
 }
 ```
@@ -85,7 +89,9 @@ console.log(countryDetails.data.paymentMethods);
     "data": {
         "country": "Poland",
         "code": "POL",
-        "currncies": ["USD", "EUR"],
+        "currency": "USD",
+        "maxAmount": 2000,
+        "minAmount": 15,
         "paymentMethods": [
             {
                 "code": "VISA",
@@ -170,7 +176,7 @@ if (result.success) {
 
 **Request Parameters:**
 
--   `amount` (number, required): Payment amount (minimum $15, maximum $2,000)
+-   `amount` (number, required): Payment amount (check country limits for min/max)
 -   `currency` (string, required): Currency code (USD, EUR)
 -   `paymentMethod` (string, required): Payment method code (VISA, MASTERCARD)
 -   `countryCode` (string, required): Country code (POL, UKR, etc.)
@@ -241,24 +247,16 @@ Here's a complete example of how to integrate payments into your website:
 
         <form id="paymentForm">
             <div>
-                <label>Amount (USD):</label>
-                <input
-                    type="number"
-                    id="amount"
-                    min="15"
-                    max="2000"
-                    step="0.01"
-                    value="15"
-                    required
-                />
-                <small>Minimum: $15, Maximum: $2,000</small>
-            </div>
-
-            <div>
                 <label>Country:</label>
                 <select id="country" required>
                     <option value="">Select country</option>
                 </select>
+            </div>
+
+            <div>
+                <label>Amount:</label>
+                <input type="number" id="amount" step="0.01" value="15" required />
+                <small id="amountLimits">Select a country to see limits</small>
             </div>
 
             <div>
@@ -280,6 +278,8 @@ Here's a complete example of how to integrate payments into your website:
                 "Content-Type": "application/json",
             };
 
+            let countriesData = [];
+
             // Load countries on page load
             async function loadCountries() {
                 try {
@@ -289,11 +289,12 @@ Here's a complete example of how to integrate payments into your website:
                     const result = await response.json();
 
                     if (result.success) {
+                        countriesData = result.data;
                         const countrySelect = document.getElementById("country");
                         result.data.forEach((country) => {
                             const option = document.createElement("option");
                             option.value = country.code;
-                            option.textContent = country.country;
+                            option.textContent = `${country.country} (${country.currency})`;
                             countrySelect.appendChild(option);
                         });
                     }
@@ -324,27 +325,60 @@ Here's a complete example of how to integrate payments into your website:
                 }
             }
 
+            // Update amount limits when country changes
+            document.getElementById("country").addEventListener("change", function () {
+                const countryCode = this.value;
+                const amountInput = document.getElementById("amount");
+                const amountLimits = document.getElementById("amountLimits");
+
+                if (countryCode) {
+                    const country = countriesData.find((c) => c.code === countryCode);
+                    if (country) {
+                        amountInput.min = country.minAmount;
+                        amountInput.max = country.maxAmount;
+                        amountInput.value = country.minAmount;
+                        amountLimits.textContent = `Min: $${country.minAmount}, Max: $${country.maxAmount} ${country.currency}`;
+                    }
+                } else {
+                    amountInput.min = 15;
+                    amountInput.max = 2000;
+                    amountInput.value = 15;
+                    amountLimits.textContent = "Select a country to see limits";
+                }
+            });
+
             // Handle form submission
             document.getElementById("paymentForm").addEventListener("submit", async function (e) {
                 e.preventDefault();
 
-                const amount = parseFloat(document.getElementById("amount").value);
                 const countryCode = document.getElementById("country").value;
+                const amount = parseFloat(document.getElementById("amount").value);
                 const paymentMethod = document.getElementById("paymentMethod").value;
 
-                if (amount < 15) {
-                    alert("Minimum amount is $15");
+                if (!countryCode) {
+                    alert("Please select a country");
                     return;
                 }
 
-                if (amount > 2000) {
-                    alert("Maximum amount is $2,000");
+                const country = countriesData.find((c) => c.code === countryCode);
+                if (!country) {
+                    alert("Invalid country selected");
+                    return;
+                }
+
+                if (amount < country.minAmount) {
+                    alert(`Minimum amount for ${country.country} is $${country.minAmount}`);
+                    return;
+                }
+
+                if (amount > country.maxAmount) {
+                    alert(`Maximum amount for ${country.country} is $${country.maxAmount}`);
                     return;
                 }
 
                 const paymentData = {
                     amount: amount,
-                    currency: "USD",
+                    currency: country.currency,
                     paymentMethod: paymentMethod,
                     countryCode: countryCode,
                     successCallback: window.location.origin + "/success",
@@ -393,7 +427,8 @@ Here's a complete example of how to integrate payments into your website:
 | `COUNTRY_NOT_FOUND`            | Country not found                               | Invalid country code                     | Use a country code from allowed countries list | Using unsupported country (e.g., "XXX")       |
 | `PAYMENT_ID_REQUIRED`          | Payment ID is required                          | Missing payment ID parameter             | Provide a valid payment ID                     | Empty payment ID in URL parameter             |
 | `MISSING_REQUIRED_FIELDS`      | Missing required fields                         | Required parameter not provided          | Check all required fields                      | Missing amount, currency, or customer data    |
-| `AMOUNT_LESS_THAN_MINIMUM`     | Amount is less than the minimum amount          | Amount below minimum ($15)               | Use amount >= $15                              | Amount < $15 or negative amount               |
+| `AMOUNT_LESS_THAN_MINIMUM`     | Amount is less than the minimum amount          | Amount below country minimum             | Use amount >= country's minimum amount         | Amount below country-specific minimum         |
+| `AMOUNT_GREATER_THAN_MAXIMUM`  | Amount is greater than the maximum amount       | Amount above country maximum             | Use amount <= country's maximum amount         | Amount above country-specific maximum         |
 | `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA or MASTERCARD                         | Using "PAYPAL" or other unsupported methods   |
 | `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       | Using lowercase or wrong format (e.g., "pol") |
 | `INVALID_CURRENCY`             | Currency is invalid                             | Unsupported currency code                | Use USD or EUR                                 | Using "GBP" or other unsupported currencies   |
@@ -429,7 +464,14 @@ async function createPayment(paymentData) {
             // Handle specific errors
             switch (result.code) {
                 case "AMOUNT_LESS_THAN_MINIMUM":
-                    alert("Amount must be at least $15");
+                    alert(
+                        "Amount is below the minimum for this country. Please check country limits."
+                    );
+                    break;
+                case "AMOUNT_GREATER_THAN_MAXIMUM":
+                    alert(
+                        "Amount exceeds the maximum for this country. Please check country limits."
+                    );
                     break;
                 case "INVALID_PAYMENT_METHOD":
                     alert("Please select a valid payment method (VISA or MasterCard)");
@@ -513,7 +555,7 @@ app.post("/webhook", (req, res) => {
 
 ```javascript
 function validatePaymentData(data) {
-    // Validate amount
+    // Validate amount (check against country limits)
     if (data.amount < 15) {
         throw new Error("Amount must be at least $15");
     }
