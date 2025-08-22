@@ -1,6 +1,6 @@
 # Merchant API Integration Guide
 
-This guide helps developers integrate system into their applications.
+This guide helps developers integrate the Telestore Proxy payment system into their applications.
 
 ## Quick Start
 
@@ -24,12 +24,20 @@ https://your-domain.com/merchant
 
 ### 3. Payment Limits
 
--   **Minimum amount:** $15.00 USD
--   **Maximum amount:** $2,000.00 USD
--   **Supported currencies:** USD // EUR, RUB soon
+-   **Minimum amount:** $15.00
+-   **Maximum amount:** $2,000.00
 -   **Supported payment methods:** VISA, MASTERCARD
 
 **Note:** Each country may have different minimum and maximum amounts. Check the country details endpoint for specific limits.
+
+### 4. Payment Method Requirements
+
+**Important:** Payment method requirements depend on the country:
+
+-   **If a country has payment methods available:** `paymentMethod` is **REQUIRED**
+-   **If a country has no payment methods:** `paymentMethod` is **OPTIONAL** (can be omitted)
+
+Always check the country details endpoint first to see available payment methods.
 
 ## API Endpoints
 
@@ -57,7 +65,6 @@ console.log(countries.data);
         {
             "country": "Poland",
             "code": "POL",
-            "currency": "USD",
             "maxAmount": 2000,
             "minAmount": 15
         }
@@ -89,22 +96,23 @@ console.log(countryDetails.data.paymentMethods);
     "data": {
         "country": "Poland",
         "code": "POL",
-        "currency": "USD",
         "maxAmount": 2000,
         "minAmount": 15,
         "paymentMethods": [
             {
-                "code": 65536,
+                "code": VISA,
                 "name": "Visa"
             },
             {
-                "code": 131072,
+                "code": MASTERCARD,
                 "name": "MasterCard"
             }
         ]
     }
 }
 ```
+
+**Note:** If `paymentMethods` array is empty or missing, payment method is optional for this country.
 
 ### Get Payment Methods
 
@@ -147,7 +155,6 @@ console.log(methods.data);
 // JavaScript example
 const paymentData = {
     amount: 100.0,
-    currency: "USD",
     countryCode: "POL",
     successCallback: "https://yoursite.com/success",
     failureCallback: "https://yoursite.com/failure",
@@ -155,7 +162,7 @@ const paymentData = {
     customerEmail: "customer@example.com",
     customerName: "John Doe",
     customerIp: "192.168.1.1",
-    // paymentMethod is optional
+    // paymentMethod is REQUIRED if country has payment methods available
     paymentMethod: "VISA",
 };
 
@@ -178,7 +185,6 @@ if (result.success) {
 **Request Parameters:**
 
 -   `amount` (number, required): Payment amount (check country limits for min/max)
--   `currency` (string, required): Currency code (USD)
 -   `countryCode` (string, required): Country code (POL, etc.)
 -   `successCallback` (string, required): URL to redirect after successful payment
 -   `failureCallback` (string, required): URL to redirect after failed payment
@@ -186,7 +192,7 @@ if (result.success) {
 -   `customerEmail` (string, required): Customer email address
 -   `customerName` (string, required): Customer full name
 -   `customerIp` (string, required): Customer IP address
--   `paymentMethod` (string, optional): Payment method code (VISA, MASTERCARD)
+-   `paymentMethod` (string, conditional): Payment method code (VISA, MASTERCARD) - **REQUIRED if country has payment methods, OPTIONAL if country has no payment methods**
 -   `externalClientId` (string, optional): External client identifier
 -   `paymentTimeMaxTimestamp` (number, optional): Maximum payment time timestamp
 -   `paymentTimeRealtiveTimestamp` (number, optional): Relative payment time timestamp
@@ -229,7 +235,6 @@ console.log("Payment status:", status.data.status);
         "paymentId": "payment_123456",
         "status": "completed",
         "amount": 100.0,
-        "currency": "USD",
         "createdAt": "2024-01-01T12:00:00Z",
         "updatedAt": "2024-01-01T12:05:00Z"
     }
@@ -245,13 +250,13 @@ console.log("Payment status:", status.data.status);
 | `COUNTRY_CODE_NOT_SPECIFIED`   | Country code not specified                      | Missing country code parameter           | Provide a valid country code                   | Empty or missing countryCode field            |
 | `COUNTRY_NOT_FOUND`            | Country not found                               | Invalid country code                     | Use a country code from allowed countries list | Using unsupported country (e.g., "XXX")       |
 | `PAYMENT_ID_REQUIRED`          | Payment ID is required                          | Missing payment ID parameter             | Provide a valid payment ID                     | Empty payment ID in URL parameter             |
-| `MISSING_REQUIRED_FIELDS`      | Missing required fields                         | Required parameter not provided          | Check all required fields                      | Missing amount, currency, or customer data    |
+| `MISSING_REQUIRED_FIELDS`      | Missing required fields                         | Required parameter not provided          | Check all required fields                      | Missing amount or customer data               |
 | `AMOUNT_LESS_THAN_MINIMUM`     | Amount is less than the minimum amount          | Amount below country minimum             | Use amount >= country's minimum amount         | Amount below country-specific minimum         |
 | `AMOUNT_GREATER_THAN_MAXIMUM`  | Amount is greater than the maximum amount       | Amount above country maximum             | Use amount <= country's maximum amount         | Amount above country-specific maximum         |
 | `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA or MASTERCARD                         | Using "PAYPAL" or other unsupported methods   |
 | `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       | Using lowercase or wrong format (e.g., "pol") |
-| `INVALID_CURRENCY`             | Currency is invalid                             | Unsupported currency code                | Use USD                                        | Using "EUR" or other unsupported currencies   |
 | `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     | VISA not available in specific country        |
+| `PAYMENT_METHOD_REQUIRED`      | Payment method is required for this country     | Country requires payment method          | Provide payment method for this country        | Country has payment methods but none provided |
 | `SOMETHING_WENT_WRONG`         | Something went wrong                            | Internal server error                    | Contact support                                | Database connection issues, server errors     |
 | `TELEWORLD_PROVIDER_ERROR`     | TeleWorld provider error                        | Payment provider error                   | Try again later or contact support             | External payment system down                  |
 | `PROVIDER_ERROR`               | Provider error                                  | External payment system error            | Try again later or contact support             | Payment gateway maintenance or errors         |
@@ -303,13 +308,15 @@ async function createPayment(paymentData) {
                         "This payment method is not supported in the selected country. Please choose a different method or country."
                     );
                     break;
-                case "MISSING_REQUIRED_FIELDS":
+                case "PAYMENT_METHOD_REQUIRED":
                     alert(
-                        "Please fill in all required fields: amount, currency, country, customer email, and customer name"
+                        "Payment method is required for this country. Please select a payment method."
                     );
                     break;
-                case "INVALID_CURRENCY":
-                    alert("Please use USD currency");
+                case "MISSING_REQUIRED_FIELDS":
+                    alert(
+                        "Please fill in all required fields: amount, country, customer email, and customer name"
+                    );
                     break;
                 case "INVALID_COUNTRY_CODE":
                     alert("Please use a valid 3-letter country code (e.g., POL, UKR)");
@@ -370,7 +377,51 @@ app.post("/webhook", (req, res) => {
 
 ## Best Practices
 
-### 1. Always Validate Input
+### 1. Always Check Country Details First
+
+```javascript
+async function createPaymentWithValidation(paymentData) {
+    // First, get country details to check payment method requirements
+    const countryResponse = await fetch(`/merchant/allowed-countries/${paymentData.countryCode}`, {
+        headers: headers,
+    });
+
+    const countryData = await countryResponse.json();
+
+    if (!countryData.success) {
+        throw new Error("Invalid country code");
+    }
+
+    const country = countryData.data;
+
+    // Check if payment method is required
+    if (country.paymentMethods && country.paymentMethods.length > 0) {
+        if (!paymentData.paymentMethod) {
+            throw new Error("Payment method is required for this country");
+        }
+
+        // Validate payment method is supported
+        const supportedMethods = country.paymentMethods.map((m) => m.code);
+        if (!supportedMethods.includes(paymentData.paymentMethod)) {
+            throw new Error("Payment method not supported in this country");
+        }
+    }
+
+    // Validate amount limits
+    if (paymentData.amount < country.minAmount) {
+        throw new Error(`Amount must be at least ${country.minAmount}`);
+    }
+
+    if (paymentData.amount > country.maxAmount) {
+        throw new Error(`Amount cannot exceed ${country.maxAmount}`);
+    }
+
+    // Create payment
+    return await createPayment(paymentData);
+}
+```
+
+### 2. Always Validate Input
 
 ```javascript
 function validatePaymentData(data) {
@@ -393,11 +444,6 @@ function validatePaymentData(data) {
         throw new Error("Valid 3-letter country code is required (e.g., POL, UKR)");
     }
 
-    // Validate currency
-    if (data.currency !== "USD") {
-        throw new Error("Only USD currency is currently supported");
-    }
-
     // Validate payment method (if provided)
     if (data.paymentMethod && !["VISA", "MASTERCARD"].includes(data.paymentMethod)) {
         throw new Error("Only VISA and MasterCard payment methods are supported");
@@ -418,7 +464,7 @@ function validatePaymentData(data) {
 }
 ```
 
-### 2. Handle Network Errors
+### 3. Handle Network Errors
 
 ```javascript
 async function safeApiCall(url, options) {
@@ -437,7 +483,7 @@ async function safeApiCall(url, options) {
 }
 ```
 
-### 3. Store Payment IDs
+### 4. Store Payment IDs
 
 Always store the `paymentId` returned from payment creation to check status later:
 
@@ -454,7 +500,7 @@ if (payment) {
 }
 ```
 
-### 4. Implement Retry Logic
+### 5. Implement Retry Logic
 
 ```javascript
 async function checkPaymentStatus(paymentId, maxRetries = 3) {
@@ -479,7 +525,7 @@ async function checkPaymentStatus(paymentId, maxRetries = 3) {
 }
 ```
 
-### 5. Handle Payment Status Changes
+### 6. Handle Payment Status Changes
 
 ```javascript
 // Check payment status periodically
@@ -506,5 +552,73 @@ async function monitorPayment(paymentId) {
     setTimeout(() => {
         clearInterval(checkInterval);
     }, 600000);
+}
+```
+
+## Test Data Examples
+
+### Example 1: Country with Payment Methods (Payment Method Required)
+
+```javascript
+// Poland has payment methods, so paymentMethod is REQUIRED
+const paymentData = {
+    amount: 100.0,
+    countryCode: "POL",
+    successCallback: "https://yoursite.com/success",
+    failureCallback: "https://yoursite.com/failure",
+    postbackUrl: "https://yoursite.com/webhook",
+    customerEmail: "customer@example.com",
+    customerName: "John Doe",
+    customerIp: "192.168.1.1",
+    paymentMethod: "VISA", // REQUIRED for Poland
+};
+```
+
+### Example 2: Country without Payment Methods (Payment Method Optional)
+
+```javascript
+// Some countries might not have payment methods, so paymentMethod is OPTIONAL
+const paymentData = {
+    amount: 100.0,
+    countryCode: "UKR",
+    successCallback: "https://yoursite.com/success",
+    failureCallback: "https://yoursite.com/failure",
+    postbackUrl: "https://yoursite.com/webhook",
+    customerEmail: "customer@example.com",
+    customerName: "John Doe",
+    customerIp: "192.168.1.1",
+    // paymentMethod omitted - OPTIONAL for this country
+};
+```
+
+### Example 3: Minimal Payment (Check Country First)
+
+```javascript
+async function createMinimalPayment(countryCode, amount, customerData) {
+    // Always check country details first
+    const countryResponse = await fetch(`/merchant/allowed-countries/${countryCode}`, {
+        headers: headers,
+    });
+
+    const countryData = await countryResponse.json();
+    const country = countryData.data;
+
+    const paymentData = {
+        amount: amount,
+        countryCode: countryCode,
+        successCallback: "https://yoursite.com/success",
+        failureCallback: "https://yoursite.com/failure",
+        postbackUrl: "https://yoursite.com/webhook",
+        customerEmail: customerData.email,
+        customerName: customerData.name,
+        customerIp: customerData.ip,
+    };
+
+    // Add payment method only if country requires it
+    if (country.paymentMethods && country.paymentMethods.length > 0) {
+        paymentData.paymentMethod = country.paymentMethods[0].name; // Use first available method
+    }
+
+    return await createPayment(paymentData);
 }
 ```
