@@ -57,6 +57,31 @@
             "response": []
         },
         {
+            "name": "Get Country Details (No Payment Methods)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/merchant/allowed-countries/ALB",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "allowed-countries", "ALB"]
+                },
+                "description": "Get detailed information about Albania (country without payment methods)"
+            },
+            "response": []
+        },
+        {
             "name": "Get Payment Methods",
             "request": {
                 "method": "GET",
@@ -82,7 +107,7 @@
             "response": []
         },
         {
-            "name": "Create Payment",
+            "name": "Create Payment (With Payment Method)",
             "request": {
                 "method": "POST",
                 "header": [
@@ -99,19 +124,19 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n    \"amount\": {{test_amount}},\n    \"currency\": \"{{test_currency}}\",\n    \"countryCode\": \"{{country_code}}\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\",\n    \"paymentMethod\": \"VISA\"\n}"
+                    "raw": "{\n    \"amount\": {{test_amount}},\n    \"countryCode\": \"{{country_code}}\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\",\n    \"paymentMethod\": \"VISA\"\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/merchant/payment",
                     "host": ["{{base_url}}"],
                     "path": ["merchant", "payment"]
                 },
-                "description": "Create a new payment transaction and get payment URL"
+                "description": "Create a new payment with VISA method (for countries that require payment method)"
             },
             "response": []
         },
         {
-            "name": "Create Payment (Minimal)",
+            "name": "Create Payment (Without Payment Method)",
             "request": {
                 "method": "POST",
                 "header": [
@@ -128,14 +153,14 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n    \"amount\": 15.0,\n    \"currency\": \"{{test_currency}}\",\n    \"countryCode\": \"{{country_code}}\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\"\n}"
+                    "raw": "{\n    \"amount\": 15.0,\n    \"countryCode\": \"ALB\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\"\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/merchant/payment",
                     "host": ["{{base_url}}"],
                     "path": ["merchant", "payment"]
                 },
-                "description": "Create a payment with minimum required fields (no paymentMethod)"
+                "description": "Create a payment without payment method (for countries that don't require it)"
             },
             "response": []
         },
@@ -157,7 +182,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n    \"amount\": {{test_amount}},\n    \"currency\": \"{{test_currency}}\",\n    \"countryCode\": \"{{country_code}}\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\",\n    \"paymentMethod\": \"MASTERCARD\",\n    \"externalClientId\": \"client_123\",\n    \"paymentTimeMaxTimestamp\": 1735689600,\n    \"paymentTimeRealtiveTimestamp\": 3600\n}"
+                    "raw": "{\n    \"amount\": {{test_amount}},\n    \"countryCode\": \"{{country_code}}\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\",\n    \"paymentMethod\": \"MASTERCARD\",\n    \"externalClientId\": \"client_123\",\n    \"paymentTimeMaxTimestamp\": 1735689600,\n    \"paymentTimeRealtiveTimestamp\": 3600\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/merchant/payment",
@@ -229,6 +254,20 @@
                     "    if (jsonData.success && jsonData.data && jsonData.data.paymentId) {",
                     "        pm.environment.set('payment_id', jsonData.data.paymentId);",
                     "        console.log('Payment ID saved:', jsonData.data.paymentId);",
+                    "    }",
+                    "}",
+                    "",
+                    "// Test payment method codes format (should be strings like VISA, MASTERCARD)",
+                    "if (pm.request.url.path.includes('/methods') || pm.request.url.path.includes('/allowed-countries/')) {",
+                    "    const jsonData = pm.response.json();",
+                    "    if (jsonData.success && jsonData.data) {",
+                    "        if (jsonData.data.paymentMethods && Array.isArray(jsonData.data.paymentMethods)) {",
+                    "            jsonData.data.paymentMethods.forEach(method => {",
+                    "                pm.test(`Payment method ${method.name} has string code`, function () {",
+                    "                    pm.expect(typeof method.code).to.equal('string');",
+                    "                });",
+                    "            });",
+                    "        }",
                     "    }",
                     "}"
                 ]
