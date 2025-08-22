@@ -50,11 +50,6 @@ console.log(countries.data);
             "code": "POL",
             "currncies": ["USD", "EUR"]
         },
-        {
-            "country": "Ukraine",
-            "code": "UKR",
-            "currncies": ["USD", "EUR"]
-        }
     ]
 }
 ```
