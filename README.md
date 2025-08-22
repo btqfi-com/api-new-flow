@@ -35,7 +35,7 @@ https://your-domain.com/merchant
 **Important:** Payment method requirements depend on the country:
 
 -   **If a country has payment methods available:** `paymentMethod` is **REQUIRED**
--   **If a country has no payment methods:** `paymentMethod` is **OPTIONAL** (can be omitted)
+-   **If a country has no payment methods (`paymentMethods: null`):** `paymentMethod` is **OPTIONAL** (can be omitted)
 
 Always check the country details endpoint first to see available payment methods.
 
@@ -66,7 +66,24 @@ console.log(countries.data);
             "country": "Poland",
             "code": "POL",
             "maxAmount": 2000,
-            "minAmount": 15
+            "minAmount": 15,
+            "paymentMethods": [
+                {
+                    "code": "VISA",
+                    "name": "Visa"
+                },
+                {
+                    "code": "MASTERCARD",
+                    "name": "MasterCard"
+                }
+            ]
+        },
+        {
+            "country": "Albania",
+            "code": "ALB",
+            "maxAmount": 2000,
+            "minAmount": 15,
+            "paymentMethods": null
         }
     ]
 }
@@ -100,11 +117,11 @@ console.log(countryDetails.data.paymentMethods);
         "minAmount": 15,
         "paymentMethods": [
             {
-                "code": VISA,
+                "code": "VISA",
                 "name": "Visa"
             },
             {
-                "code": MASTERCARD,
+                "code": "MASTERCARD",
                 "name": "MasterCard"
             }
         ]
@@ -112,7 +129,36 @@ console.log(countryDetails.data.paymentMethods);
 }
 ```
 
-**Note:** If `paymentMethods` array is empty or missing, payment method is optional for this country.
+**Note:** If `paymentMethods` is `null`, payment method is optional for this country.
+
+**Example for country without payment methods:**
+
+```javascript
+// JavaScript example for Albania
+const countryCode = "ALB";
+const response = await fetch(`/merchant/allowed-countries/${countryCode}`, {
+    method: "GET",
+    headers: headers,
+});
+
+const countryDetails = await response.json();
+console.log(countryDetails.data.paymentMethods); // null
+```
+
+**Response for country without payment methods:**
+
+```json
+{
+    "success": true,
+    "data": {
+        "country": "Albania",
+        "code": "ALB",
+        "maxAmount": 2000,
+        "minAmount": 15,
+        "paymentMethods": null
+    }
+}
+```
 
 ### Get Payment Methods
 
@@ -136,11 +182,11 @@ console.log(methods.data);
     "success": true,
     "data": [
         {
-            "code": 65536,
+            "code": "VISA",
             "name": "Visa"
         },
         {
-            "code": 131072,
+            "code": "MASTERCARD",
             "name": "MasterCard"
         }
     ]
@@ -405,6 +451,9 @@ async function createPaymentWithValidation(paymentData) {
         if (!supportedMethods.includes(paymentData.paymentMethod)) {
             throw new Error("Payment method not supported in this country");
         }
+    } else if (country.paymentMethods === null) {
+        // Country has no payment methods, paymentMethod is optional
+        console.log("Payment method is optional for this country");
     }
 
     // Validate amount limits
@@ -580,7 +629,7 @@ const paymentData = {
 // Some countries might not have payment methods, so paymentMethod is OPTIONAL
 const paymentData = {
     amount: 100.0,
-    countryCode: "UKR",
+    countryCode: "ALB",
     successCallback: "https://yoursite.com/success",
     failureCallback: "https://yoursite.com/failure",
     postbackUrl: "https://yoursite.com/webhook",
@@ -616,7 +665,10 @@ async function createMinimalPayment(countryCode, amount, customerData) {
 
     // Add payment method only if country requires it
     if (country.paymentMethods && country.paymentMethods.length > 0) {
-        paymentData.paymentMethod = country.paymentMethods[0].name; // Use first available method
+        paymentData.paymentMethod = country.paymentMethods[0].code; // Use first available method
+    } else if (country.paymentMethods === null) {
+        // Country has no payment methods, paymentMethod is optional
+        console.log("Payment method is optional for this country");
     }
 
     return await createPayment(paymentData);
