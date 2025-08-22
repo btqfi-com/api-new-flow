@@ -26,7 +26,7 @@ https://your-domain.com/merchant
 
 -   **Minimum amount:** $15.00 USD
 -   **Maximum amount:** $2,000.00 USD
--   **Supported currencies:** USD, EUR
+-   **Supported currencies:** USD
 -   **Supported payment methods:** VISA, MASTERCARD
 
 ## API Endpoints
