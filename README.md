@@ -1,6 +1,6 @@
 # Merchant API Integration Guide
 
-This guide helps developers integrate the Telestore Proxy payment system into their applications.
+This guide helps developers integrate payment system into their applications.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ const headers = {
 ### 2. Base URL
 
 ```
-https://your-domain.com/merchant
+https://pay.btqfi.com
 ```
 
 ### 3. Payment Limits
@@ -251,7 +251,7 @@ if (result.success) {
     "data": {
         "paymentId": "payment_123456",
         "paymentUrl": "https://payment-gateway.com/pay/123456",
-        "status": "pending"
+        "id": "1"
     }
 }
 ```
