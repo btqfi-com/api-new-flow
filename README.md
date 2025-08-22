@@ -22,6 +22,13 @@ const headers = {
 https://your-domain.com/merchant
 ```
 
+### 3. Payment Limits
+
+-   **Minimum amount:** $15.00 USD
+-   **Maximum amount:** $2,000.00 USD
+-   **Supported currencies:** USD, EUR
+-   **Supported payment methods:** VISA, MASTERCARD
+
 ## API Endpoints
 
 ### Get Available Countries
@@ -163,7 +170,7 @@ if (result.success) {
 
 **Request Parameters:**
 
--   `amount` (number, required): Payment amount (minimum $15)
+-   `amount` (number, required): Payment amount (minimum $15, maximum $2,000)
 -   `currency` (string, required): Currency code (USD, EUR)
 -   `paymentMethod` (string, required): Payment method code (VISA, MASTERCARD)
 -   `countryCode` (string, required): Country code (POL, UKR, etc.)
@@ -235,7 +242,16 @@ Here's a complete example of how to integrate payments into your website:
         <form id="paymentForm">
             <div>
                 <label>Amount (USD):</label>
-                <input type="number" id="amount" min="15" step="0.01" value="15" required />
+                <input
+                    type="number"
+                    id="amount"
+                    min="15"
+                    max="2000"
+                    step="0.01"
+                    value="15"
+                    required
+                />
+                <small>Minimum: $15, Maximum: $2,000</small>
             </div>
 
             <div>
@@ -321,6 +337,11 @@ Here's a complete example of how to integrate payments into your website:
                     return;
                 }
 
+                if (amount > 2000) {
+                    alert("Maximum amount is $2,000");
+                    return;
+                }
+
                 const paymentData = {
                     amount: amount,
                     currency: "USD",
@@ -366,20 +387,20 @@ Here's a complete example of how to integrate payments into your website:
 
 ### Common Error Codes
 
-| Code                           | Message                                         | Description                              | Solution                                       |
-| ------------------------------ | ----------------------------------------------- | ---------------------------------------- | ---------------------------------------------- |
-| `COUNTRY_CODE_NOT_SPECIFIED`   | Country code not specified                      | Missing country code parameter           | Provide a valid country code                   |
-| `COUNTRY_NOT_FOUND`            | Country not found                               | Invalid country code                     | Use a country code from allowed countries list |
-| `PAYMENT_ID_REQUIRED`          | Payment ID is required                          | Missing payment ID parameter             | Provide a valid payment ID                     |
-| `MISSING_REQUIRED_FIELDS`      | Missing required fields                         | Required parameter not provided          | Check all required fields                      |
-| `AMOUNT_LESS_THAN_MINIMUM`     | Amount is less than the minimum amount          | Amount below minimum ($15)               | Use amount >= $15                              |
-| `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA or MASTERCARD                         |
-| `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       |
-| `INVALID_CURRENCY`             | Currency is invalid                             | Unsupported currency code                | Use USD or EUR                                 |
-| `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     |
-| `SOMETHING_WENT_WRONG`         | Something went wrong                            | Internal server error                    | Contact support                                |
-| `TELEWORLD_PROVIDER_ERROR`     | TeleWorld provider error                        | Payment provider error                   | Try again later or contact support             |
-| `PROVIDER_ERROR`               | Provider error                                  | External payment system error            | Try again later or contact support             |
+| Code                           | Message                                         | Description                              | Solution                                       | Common Causes                                 |
+| ------------------------------ | ----------------------------------------------- | ---------------------------------------- | ---------------------------------------------- | --------------------------------------------- |
+| `COUNTRY_CODE_NOT_SPECIFIED`   | Country code not specified                      | Missing country code parameter           | Provide a valid country code                   | Empty or missing countryCode field            |
+| `COUNTRY_NOT_FOUND`            | Country not found                               | Invalid country code                     | Use a country code from allowed countries list | Using unsupported country (e.g., "XXX")       |
+| `PAYMENT_ID_REQUIRED`          | Payment ID is required                          | Missing payment ID parameter             | Provide a valid payment ID                     | Empty payment ID in URL parameter             |
+| `MISSING_REQUIRED_FIELDS`      | Missing required fields                         | Required parameter not provided          | Check all required fields                      | Missing amount, currency, or customer data    |
+| `AMOUNT_LESS_THAN_MINIMUM`     | Amount is less than the minimum amount          | Amount below minimum ($15)               | Use amount >= $15                              | Amount < $15 or negative amount               |
+| `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA or MASTERCARD                         | Using "PAYPAL" or other unsupported methods   |
+| `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       | Using lowercase or wrong format (e.g., "pol") |
+| `INVALID_CURRENCY`             | Currency is invalid                             | Unsupported currency code                | Use USD or EUR                                 | Using "GBP" or other unsupported currencies   |
+| `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     | VISA not available in specific country        |
+| `SOMETHING_WENT_WRONG`         | Something went wrong                            | Internal server error                    | Contact support                                | Database connection issues, server errors     |
+| `TELEWORLD_PROVIDER_ERROR`     | TeleWorld provider error                        | Payment provider error                   | Try again later or contact support             | External payment system down                  |
+| `PROVIDER_ERROR`               | Provider error                                  | External payment system error            | Try again later or contact support             | Payment gateway maintenance or errors         |
 
 ### Error Response Format
 
@@ -411,24 +432,33 @@ async function createPayment(paymentData) {
                     alert("Amount must be at least $15");
                     break;
                 case "INVALID_PAYMENT_METHOD":
-                    alert("Please select a valid payment method");
+                    alert("Please select a valid payment method (VISA or MasterCard)");
                     break;
                 case "COUNTRY_NOT_FOUND":
-                    alert("Please select a valid country");
+                    alert("Please select a valid country from the list");
                     break;
                 case "PAYMENT_METHOD_NOT_SUPPORTED":
-                    alert("This payment method is not supported in the selected country");
+                    alert(
+                        "This payment method is not supported in the selected country. Please choose a different method or country."
+                    );
                     break;
                 case "MISSING_REQUIRED_FIELDS":
-                    alert("Please fill in all required fields");
+                    alert(
+                        "Please fill in all required fields: amount, currency, payment method, country, customer email, and customer name"
+                    );
                     break;
                 case "INVALID_CURRENCY":
-                    alert("Please select a valid currency");
+                    alert("Please select a valid currency (USD or EUR)");
+                    break;
+                case "INVALID_COUNTRY_CODE":
+                    alert("Please use a valid 3-letter country code (e.g., POL, UKR)");
                     break;
                 case "SOMETHING_WENT_WRONG":
                 case "TELEWORLD_PROVIDER_ERROR":
                 case "PROVIDER_ERROR":
-                    alert("Payment service temporarily unavailable. Please try again later.");
+                    alert(
+                        "Payment service temporarily unavailable. Please try again in a few minutes or contact support if the problem persists."
+                    );
                     break;
                 default:
                     alert("Payment error: " + result.message);
@@ -439,7 +469,7 @@ async function createPayment(paymentData) {
         return result.data;
     } catch (error) {
         console.error("Network error:", error);
-        alert("Network error. Please check your connection.");
+        alert("Network error. Please check your internet connection and try again.");
         return null;
     }
 }
@@ -483,19 +513,47 @@ app.post("/webhook", (req, res) => {
 
 ```javascript
 function validatePaymentData(data) {
+    // Validate amount
     if (data.amount < 15) {
         throw new Error("Amount must be at least $15");
     }
 
+    if (data.amount > 2000) {
+        throw new Error("Amount cannot exceed $2,000");
+    }
+
+    // Validate email
     if (!data.customerEmail || !data.customerEmail.includes("@")) {
         throw new Error("Valid email is required");
     }
 
+    // Validate country code
     if (!data.countryCode || data.countryCode.length !== 3) {
-        throw new Error("Valid country code is required");
+        throw new Error("Valid 3-letter country code is required (e.g., POL, UKR)");
     }
 
-    // Add more validation as needed
+    // Validate currency
+    if (!["USD", "EUR"].includes(data.currency)) {
+        throw new Error("Only USD and EUR currencies are supported");
+    }
+
+    // Validate payment method
+    if (!["VISA", "MASTERCARD"].includes(data.paymentMethod)) {
+        throw new Error("Only VISA and MasterCard payment methods are supported");
+    }
+
+    // Validate URLs
+    if (!data.successCallback.startsWith("https://")) {
+        throw new Error("Success callback URL must use HTTPS");
+    }
+
+    if (!data.failureCallback.startsWith("https://")) {
+        throw new Error("Failure callback URL must use HTTPS");
+    }
+
+    if (!data.postbackUrl.startsWith("https://")) {
+        throw new Error("Postback URL must use HTTPS");
+    }
 }
 ```
 
@@ -595,7 +653,7 @@ async function monitorPayment(paymentId) {
 ### Test Environment
 
 -   Use test merchant tokens for development
--   Test with small amounts ($15 minimum)
+-   Test with small amounts ($15 minimum, $2,000 maximum)
 -   Verify webhook endpoints are accessible
 
 ### Test Payment Flow
@@ -609,10 +667,38 @@ async function monitorPayment(paymentId) {
 ### Test Data Examples
 
 ```javascript
-// Test payment data
-const testPaymentData = {
+// Test payment data - minimum amount
+const testPaymentDataMin = {
     amount: 15.0,
     currency: "USD",
+    paymentMethod: "VISA",
+    countryCode: "POL",
+    successCallback: "https://yoursite.com/success",
+    failureCallback: "https://yoursite.com/failure",
+    postbackUrl: "https://yoursite.com/webhook",
+    customerEmail: "test@example.com",
+    customerName: "Test User",
+    customerIp: "127.0.0.1",
+};
+
+// Test payment data - maximum amount
+const testPaymentDataMax = {
+    amount: 2000.0,
+    currency: "USD",
+    paymentMethod: "MASTERCARD",
+    countryCode: "UKR",
+    successCallback: "https://yoursite.com/success",
+    failureCallback: "https://yoursite.com/failure",
+    postbackUrl: "https://yoursite.com/webhook",
+    customerEmail: "test@example.com",
+    customerName: "Test User",
+    customerIp: "127.0.0.1",
+};
+
+// Test payment data - typical amount
+const testPaymentDataTypical = {
+    amount: 100.0,
+    currency: "EUR",
     paymentMethod: "VISA",
     countryCode: "POL",
     successCallback: "https://yoursite.com/success",
