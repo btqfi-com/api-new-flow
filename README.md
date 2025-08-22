@@ -1,6 +1,6 @@
 # Merchant API Integration Guide
 
-This guide helps developers integrate the Telestore Proxy payment system into their applications.
+This guide helps developers integrate system into their applications.
 
 ## Quick Start
 
