@@ -1,0 +1,299 @@
+{
+    "info": {
+        "_postman_id": "BtqFinance-merchant-api",
+        "name": "BtqFinance Merchant API",
+        "description": "API collection for BtqFinance Proxy payment system integration",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Get Allowed Countries",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/merchant/allowed-countries",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "allowed-countries"]
+                },
+                "description": "Get list of all allowed countries for payment processing"
+            },
+            "response": []
+        },
+        {
+            "name": "Get Country Details",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/merchant/allowed-countries/{{country_code}}",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "allowed-countries", "{{country_code}}"]
+                },
+                "description": "Get detailed information about a specific country including available payment methods"
+            },
+            "response": []
+        },
+        {
+            "name": "Get Country Details (No Payment Methods)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/merchant/allowed-countries/ALB",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "allowed-countries", "ALB"]
+                },
+                "description": "Get detailed information about Albania (country without payment methods)"
+            },
+            "response": []
+        },
+        {
+            "name": "Get Payment Methods",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/merchant/methods",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "methods"]
+                },
+                "description": "Get all available payment methods"
+            },
+            "response": []
+        },
+        {
+            "name": "Create Payment (With Payment Method)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"amount\": {{test_amount}},\n    \"countryCode\": \"{{country_code}}\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\",\n    \"paymentMethod\": \"VISA\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/merchant/payment",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "payment"]
+                },
+                "description": "Create a new payment with VISA method (for countries that require payment method)"
+            },
+            "response": []
+        },
+        {
+            "name": "Create Payment (Without Payment Method)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"amount\": 15.0,\n    \"countryCode\": \"ALB\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/merchant/payment",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "payment"]
+                },
+                "description": "Create a payment without payment method (for countries that don't require it)"
+            },
+            "response": []
+        },
+        {
+            "name": "Create Payment (With Optional Fields)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"amount\": {{test_amount}},\n    \"countryCode\": \"{{country_code}}\",\n    \"successCallback\": \"{{success_callback}}\",\n    \"failureCallback\": \"{{failure_callback}}\",\n    \"postbackUrl\": \"{{postback_url}}\",\n    \"customerEmail\": \"{{test_customer_email}}\",\n    \"customerName\": \"{{test_customer_name}}\",\n    \"customerIp\": \"{{test_customer_ip}}\",\n    \"paymentMethod\": \"MASTERCARD\",\n    \"externalClientId\": \"client_123\",\n    \"paymentTimeMaxTimestamp\": 1735689600,\n    \"paymentTimeRealtiveTimestamp\": 3600\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/merchant/payment",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "payment"]
+                },
+                "description": "Create a payment with all optional fields"
+            },
+            "response": []
+        },
+        {
+            "name": "Check Payment Status",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{merchant_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/merchant/payment/{{payment_id}}",
+                    "host": ["{{base_url}}"],
+                    "path": ["merchant", "payment", "{{payment_id}}"]
+                },
+                "description": "Check the current status of a payment"
+            },
+            "response": []
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [""]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Test for successful response",
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "// Test for valid JSON response",
+                    "pm.test(\"Response is valid JSON\", function () {",
+                    "    pm.response.to.be.json;",
+                    "});",
+                    "",
+                    "// Test for success field in response",
+                    "pm.test(\"Response has success field\", function () {",
+                    "    const jsonData = pm.response.json();",
+                    "    pm.expect(jsonData).to.have.property('success');",
+                    "});",
+                    "",
+                    "// If it's a payment creation request, save the payment ID",
+                    "if (pm.request.url.path.includes('/payment') && pm.request.method === 'POST') {",
+                    "    const jsonData = pm.response.json();",
+                    "    if (jsonData.success && jsonData.data && jsonData.data.paymentId) {",
+                    "        pm.environment.set('payment_id', jsonData.data.paymentId);",
+                    "        console.log('Payment ID saved:', jsonData.data.paymentId);",
+                    "    }",
+                    "}",
+                    "",
+                    "// Test payment method codes format (should be strings like VISA, MASTERCARD)",
+                    "if (pm.request.url.path.includes('/methods') || pm.request.url.path.includes('/allowed-countries/')) {",
+                    "    const jsonData = pm.response.json();",
+                    "    if (jsonData.success && jsonData.data) {",
+                    "        if (jsonData.data.paymentMethods && Array.isArray(jsonData.data.paymentMethods)) {",
+                    "            jsonData.data.paymentMethods.forEach(method => {",
+                    "                pm.test(`Payment method ${method.name} has string code`, function () {",
+                    "                    pm.expect(typeof method.code).to.equal('string');",
+                    "                });",
+                    "            });",
+                    "        }",
+                    "    }",
+                    "}"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "https://pay.btqfi.com",
+            "type": "string"
+        },
+        {
+            "key": "merchant_token",
+            "value": "YOUR_MERCHANT_TOKEN",
+            "type": "string"
+        },
+        {
+            "key": "country_code",
+            "value": "POL",
+            "type": "string"
+        },
+        {
+            "key": "payment_id",
+            "value": "payment_123456",
+            "type": "string"
+        }
+    ]
+}
