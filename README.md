@@ -214,8 +214,12 @@ console.log("Payment status:", status.data.status);
 {
     "success": true,
     "data": {
-        "status": "status of payment"
-        // lots of different fields
+        "paymentId": "payment_123456",
+        "status": "completed",
+        "amount": 100.0,
+        "currency": "USD",
+        "createdAt": "2024-01-01T12:00:00Z",
+        "updatedAt": "2024-01-01T12:05:00Z"
     }
 }
 ```
@@ -367,17 +371,20 @@ Here's a complete example of how to integrate payments into your website:
 
 ### Common Error Codes
 
-| Code                         | Message                    | Description                            | Solution                                       |
-| ---------------------------- | -------------------------- | -------------------------------------- | ---------------------------------------------- |
-| `COUNTRY_CODE_NOT_SPECIFIED` | Country code not specified | Missing country code parameter         | Provide a valid country code                   |
-| `COUNTRY_NOT_FOUND`          | Country not found          | Invalid country code                   | Use a country code from allowed countries list |
-| `PAYMENT_ID_REQUIRED`        | Payment ID required        | Missing payment ID parameter           | Provide a valid payment ID                     |
-| `PAYMENT_NOT_FOUND`          | Payment not found          | Invalid payment ID                     | Check payment ID format and existence          |
-| `INVALID_AMOUNT`             | Invalid payment amount     | Amount below minimum or invalid format | Use amount >= $15                              |
-| `INVALID_CURRENCY`           | Invalid currency           | Unsupported currency code              | Use USD or EUR                                 |
-| `INVALID_PAYMENT_METHOD`     | Invalid payment method     | Unsupported payment method             | Use VISA or MASTERCARD                         |
-| `MISSING_REQUIRED_FIELD`     | Missing required field     | Required parameter not provided        | Check all required fields                      |
-| `INVALID_CALLBACK_URL`       | Invalid callback URL       | Invalid success/failure URL format     | Use valid HTTPS URLs                           |
+| Code                           | Message                                         | Description                              | Solution                                       |
+| ------------------------------ | ----------------------------------------------- | ---------------------------------------- | ---------------------------------------------- |
+| `COUNTRY_CODE_NOT_SPECIFIED`   | Country code not specified                      | Missing country code parameter           | Provide a valid country code                   |
+| `COUNTRY_NOT_FOUND`            | Country not found                               | Invalid country code                     | Use a country code from allowed countries list |
+| `PAYMENT_ID_REQUIRED`          | Payment ID is required                          | Missing payment ID parameter             | Provide a valid payment ID                     |
+| `MISSING_REQUIRED_FIELDS`      | Missing required fields                         | Required parameter not provided          | Check all required fields                      |
+| `AMOUNT_LESS_THAN_MINIMUM`     | Amount is less than the minimum amount          | Amount below minimum ($15)               | Use amount >= $15                              |
+| `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA or MASTERCARD                         |
+| `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       |
+| `INVALID_CURRENCY`             | Currency is invalid                             | Unsupported currency code                | Use USD or EUR                                 |
+| `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     |
+| `SOMETHING_WENT_WRONG`         | Something went wrong                            | Internal server error                    | Contact support                                |
+| `TELEWORLD_PROVIDER_ERROR`     | TeleWorld provider error                        | Payment provider error                   | Try again later or contact support             |
+| `PROVIDER_ERROR`               | Provider error                                  | External payment system error            | Try again later or contact support             |
 
 ### Error Response Format
 
@@ -405,7 +412,7 @@ async function createPayment(paymentData) {
         if (!result.success) {
             // Handle specific errors
             switch (result.code) {
-                case "INVALID_AMOUNT":
+                case "AMOUNT_LESS_THAN_MINIMUM":
                     alert("Amount must be at least $15");
                     break;
                 case "INVALID_PAYMENT_METHOD":
@@ -413,6 +420,20 @@ async function createPayment(paymentData) {
                     break;
                 case "COUNTRY_NOT_FOUND":
                     alert("Please select a valid country");
+                    break;
+                case "PAYMENT_METHOD_NOT_SUPPORTED":
+                    alert("This payment method is not supported in the selected country");
+                    break;
+                case "MISSING_REQUIRED_FIELDS":
+                    alert("Please fill in all required fields");
+                    break;
+                case "INVALID_CURRENCY":
+                    alert("Please select a valid currency");
+                    break;
+                case "SOMETHING_WENT_WRONG":
+                case "TELEWORLD_PROVIDER_ERROR":
+                case "PROVIDER_ERROR":
+                    alert("Payment service temporarily unavailable. Please try again later.");
                     break;
                 default:
                     alert("Payment error: " + result.message);
@@ -455,9 +476,9 @@ app.post("/webhook", (req, res) => {
 
 ```json
 {
-	"status": "success", // The status of the payment could be "success"/"failure"/"pending",
-	"paymentId": "<Payment id>",
-    "externalClientId": <external client id>
+    "status": "success", // The status of the payment could be "success"/"failure"/"pending"
+    "paymentId": "<Payment id>",
+    "externalClientId": "<external client id>"
 }
 ```
 
@@ -473,6 +494,10 @@ function validatePaymentData(data) {
 
     if (!data.customerEmail || !data.customerEmail.includes("@")) {
         throw new Error("Valid email is required");
+    }
+
+    if (!data.countryCode || data.countryCode.length !== 3) {
+        throw new Error("Valid country code is required");
     }
 
     // Add more validation as needed
@@ -540,6 +565,36 @@ async function checkPaymentStatus(paymentId, maxRetries = 3) {
 }
 ```
 
+### 5. Handle Payment Status Changes
+
+```javascript
+// Check payment status periodically
+async function monitorPayment(paymentId) {
+    const checkInterval = setInterval(async () => {
+        try {
+            const status = await checkPaymentStatus(paymentId);
+
+            if (status.status === "completed") {
+                clearInterval(checkInterval);
+                console.log("Payment completed successfully");
+                // Update UI, send confirmation email, etc.
+            } else if (status.status === "failed") {
+                clearInterval(checkInterval);
+                console.log("Payment failed");
+                // Handle failed payment
+            }
+        } catch (error) {
+            console.error("Error checking payment status:", error);
+        }
+    }, 5000); // Check every 5 seconds
+
+    // Stop checking after 10 minutes
+    setTimeout(() => {
+        clearInterval(checkInterval);
+    }, 600000);
+}
+```
+
 ## Testing
 
 ### Test Environment
@@ -555,6 +610,24 @@ async function checkPaymentStatus(paymentId, maxRetries = 3) {
 3. Complete payment on test gateway
 4. Verify webhook received
 5. Check payment status via API
+
+### Test Data Examples
+
+```javascript
+// Test payment data
+const testPaymentData = {
+    amount: 15.0,
+    currency: "USD",
+    paymentMethod: "VISA",
+    countryCode: "POL",
+    successCallback: "https://yoursite.com/success",
+    failureCallback: "https://yoursite.com/failure",
+    postbackUrl: "https://yoursite.com/webhook",
+    customerEmail: "test@example.com",
+    customerName: "Test User",
+    customerIp: "127.0.0.1",
+};
+```
 
 ## Support
 
