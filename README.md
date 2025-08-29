@@ -402,7 +402,6 @@ app.post("/webhook", (req, res) => {
 
     console.log("Payment webhook received:", paymentData);
 
-    // Verify webhook signature (implement security)
     // Process payment status update
     // Update your database
     // Send confirmation emails, etc.
