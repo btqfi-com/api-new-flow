@@ -279,7 +279,7 @@ console.log("Payment status:", status.data.status);
     "success": true,
     "data": {
         "paymentId": "payment_123456",
-        "status": "completed",
+        "status": "success",
         "amount": 100.0,
         "createdAt": "2024-01-01T12:00:00Z",
         "updatedAt": "2024-01-01T12:05:00Z"
