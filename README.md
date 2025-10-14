@@ -44,7 +44,7 @@ Always check the country details endpoint first to see available payment methods
 
 ### Get Available Countries
 
-### Endpoint
+**Endpoint**
 
 ```
 https://pay.btqfi.com/merchant/allowed-countries
@@ -98,7 +98,7 @@ console.log(countries.data);
 
 ### Get Country Details
 
-### Endpoint
+**Endpoint**
 
 ```
 https://pay.btqfi.com/merchant/allowed-countries/{countryCode}
@@ -175,7 +175,7 @@ console.log(countryDetails.data.paymentMethods); // null
 
 ### Get Payment Methods
 
-### Endpoint
+**Endpoint**
 
 ```
 https://pay.btqfi.com/merchant/methods
@@ -214,7 +214,7 @@ console.log(methods.data);
 
 ### Create Payment
 
-### Endpoint
+**Endpoint**
 
 ```
 https://pay.btqfi.com/merchant/payment
@@ -283,7 +283,7 @@ if (result.success) {
 
 ### Check Payment Status
 
-### Endpoint
+**Endpoint**
 
 ```
 https://pay.btqfi.com/merchant/payment/{paymentId}
