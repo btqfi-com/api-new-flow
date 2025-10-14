@@ -173,6 +173,50 @@ console.log(countryDetails.data.paymentMethods); // null
 }
 ```
 
+### Convert Currency
+
+**Endpoint**
+
+```
+https://pay.btqfi.com/merchant/convert
+```
+
+**Purpose:** Convert amount from one currency to USD using current exchange rate.
+
+```javascript
+// JavaScript example
+const currency = "EUR";
+const value = 100.0;
+
+const response = await fetch(`/merchant/convert?currency=${currency}&value=${value}`, {
+    method: "GET",
+    headers: headers,
+});
+
+const result = await response.json();
+console.log("Converted amount in USD:", result.data);
+```
+
+**Request Parameters:**
+
+-   `currency` (string, required): Currency code (EUR, RUB, TRY, KZT)
+-   `value` (number, required): Amount to convert
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "data": "108.50" // Converted amount in USD
+}
+```
+
+**Error Codes:**
+
+-   `INVALID_CURRENCY`: Currency is not supported or invalid
+-   `INVALID_CONVERSION_VALUE`: Value is missing or invalid
+-   `INVALID_RATE`: Exchange rate not available for the specified currency
+
 ### Get Payment Methods
 
 **Endpoint**
@@ -334,6 +378,9 @@ console.log("Payment status:", status.data.status);
 | `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       | Using lowercase or wrong format (e.g., "pol") |
 | `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     | VISA not available in specific country        |
 | `PAYMENT_METHOD_REQUIRED`      | Payment method is required for this country     | Country requires payment method          | Provide payment method for this country        | Country has payment methods but none provided |
+| `INVALID_CURRENCY`             | Currency is invalid                             | Invalid or unsupported currency code     | Use supported currency (EUR, RUB, TRY, KZT)    | Using unsupported currency code               |
+| `INVALID_CONVERSION_VALUE`     | Invalid conversion value                        | Missing or invalid value for conversion  | Provide valid numeric value                    | Empty value or non-numeric value              |
+| `INVALID_RATE`                 | Invalid rate                                    | Exchange rate not available              | Try again later or contact support             | Rate service unavailable                      |
 | `SOMETHING_WENT_WRONG`         | Something went wrong                            | Internal server error                    | Contact support                                | Database connection issues, server errors     |
 | `TELEWORLD_PROVIDER_ERROR`     | TeleWorld provider error                        | Payment provider error                   | Try again later or contact support             | External payment system down                  |
 | `PROVIDER_ERROR`               | Provider error                                  | External payment system error            | Try again later or contact support             | Payment gateway maintenance or errors         |
