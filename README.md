@@ -27,6 +27,7 @@ https://pay.btqfi.com
 -   **Minimum amount:** $15.00
 -   **Maximum amount:** $2,000.00
 -   **Supported payment methods:** VISA, MASTERCARD
+-   **Аll payments are made in** USD
 
 **Note:** Each country may have different minimum and maximum amounts. Check the country details endpoint for specific limits.
 
@@ -42,6 +43,12 @@ Always check the country details endpoint first to see available payment methods
 ## API Endpoints
 
 ### Get Available Countries
+
+### Endpoint
+
+```
+https://pay.btqfi.com/merchant/allowed-countries
+```
 
 **Purpose:** Get list of countries where payments are supported.
 
@@ -90,6 +97,12 @@ console.log(countries.data);
 ```
 
 ### Get Country Details
+
+### Endpoint
+
+```
+https://pay.btqfi.com/merchant/allowed-countries/{countryCode}
+```
 
 **Purpose:** Get detailed information about a specific country including available payment methods.
 
@@ -162,6 +175,12 @@ console.log(countryDetails.data.paymentMethods); // null
 
 ### Get Payment Methods
 
+### Endpoint
+
+```
+https://pay.btqfi.com/merchant/methods
+```
+
 **Purpose:** Get all available payment methods.
 
 ```javascript
@@ -195,12 +214,18 @@ console.log(methods.data);
 
 ### Create Payment
 
+### Endpoint
+
+```
+https://pay.btqfi.com/merchant/payment
+```
+
 **Purpose:** Create a new payment transaction and get payment URL.
 
 ```javascript
 // JavaScript example
 const paymentData = {
-    amount: 100.0,
+    amount: 100.0, // in USD
     countryCode: "POL",
     successCallback: "https://yoursite.com/success",
     failureCallback: "https://yoursite.com/failure",
@@ -258,6 +283,12 @@ if (result.success) {
 
 ### Check Payment Status
 
+### Endpoint
+
+```
+https://pay.btqfi.com/merchant/payment/{paymentId}
+```
+
 **Purpose:** Check the current status of a payment.
 
 ```javascript
@@ -279,7 +310,7 @@ console.log("Payment status:", status.data.status);
     "success": true,
     "data": {
         "paymentId": "payment_123456",
-        "status": "success",// 'created', 'invoice_created', 'pending', 'success', 'failed', 'cancelled', 'expired'
+        "status": "completed",
         "amount": 100.0,
         "createdAt": "2024-01-01T12:00:00Z",
         "updatedAt": "2024-01-01T12:05:00Z"
@@ -402,6 +433,7 @@ app.post("/webhook", (req, res) => {
 
     console.log("Payment webhook received:", paymentData);
 
+    // Verify webhook signature (implement security)
     // Process payment status update
     // Update your database
     // Send confirmation emails, etc.
