@@ -26,8 +26,8 @@ https://pay.btqfi.com
 
 -   **Minimum amount:** $15.00
 -   **Maximum amount:** $2,000.00
--   **Supported payment methods:** VISA, MASTERCARD
--   **Аll payments are made in** USD
+-   **Supported payment methods:** VISA, MASTERCARD,
+-   **Supported currencies:** USD, EUR, RUB, TRY, KZT
 
 **Note:** Each country may have different minimum and maximum amounts. Check the country details endpoint for specific limits.
 
@@ -51,6 +51,10 @@ https://pay.btqfi.com/merchant/allowed-countries
 ```
 
 **Purpose:** Get list of countries where payments are supported.
+
+**Request Parameters:**
+
+-   No parameters required
 
 ```javascript
 // JavaScript example
@@ -105,6 +109,10 @@ https://pay.btqfi.com/merchant/allowed-countries/{countryCode}
 ```
 
 **Purpose:** Get detailed information about a specific country including available payment methods.
+
+**Request Parameters:**
+
+-   `countryCode` (string, required): Three-letter country code (e.g., POL, UKR)
 
 ```javascript
 // JavaScript example
@@ -183,6 +191,11 @@ https://pay.btqfi.com/merchant/convert
 
 **Purpose:** Convert amount from one currency to USD using current exchange rate.
 
+**Request Parameters:**
+
+-   `currency` (string, required): Currency code to convert from (EUR, RUB, TRY, KZT)
+-   `value` (number, required): Amount to convert to USD
+
 ```javascript
 // JavaScript example
 const currency = "EUR";
@@ -200,7 +213,7 @@ console.log("Converted amount in USD:", result.data);
 **Request Parameters:**
 
 -   `currency` (string, required): Currency code (EUR, RUB, TRY, KZT)
--   `value` (number, required): Amount to convert
+-   `value` (number, required): Amount to convert from specified currency to USD
 
 **Response:**
 
@@ -226,6 +239,10 @@ https://pay.btqfi.com/merchant/methods
 ```
 
 **Purpose:** Get all available payment methods.
+
+**Request Parameters:**
+
+-   No parameters required
 
 ```javascript
 // JavaScript example
@@ -266,6 +283,22 @@ https://pay.btqfi.com/merchant/payment
 
 **Purpose:** Create a new payment transaction and get payment URL.
 
+**Request Parameters:**
+
+-   `amount` (number, required): Payment amount in USD
+-   `countryCode` (string, required): Three-letter country code (e.g., POL, UKR)
+-   `successCallback` (string, required): URL to redirect after successful payment
+-   `failureCallback` (string, required): URL to redirect after failed payment
+-   `postbackUrl` (string, required): Webhook URL for payment notifications
+-   `customerEmail` (string, required): Customer email address
+-   `customerName` (string, required): Customer full name
+-   `customerIp` (string, required): Customer IP address
+-   `paymentMethod` (string, conditional): Payment method code (VISA, MASTERCARD) - required if country has payment methods
+-   `currency` (string, optional): Currency code (USD, EUR, RUB, TRY, KZT) - defaults to USD
+-   `externalClientId` (string, optional): External client identifier
+-   `paymentTimeMaxTimestamp` (number, optional): Maximum payment time timestamp
+-   `paymentTimeRealtiveTimestamp` (number, optional): Relative payment time timestamp
+
 ```javascript
 // JavaScript example
 const paymentData = {
@@ -279,6 +312,7 @@ const paymentData = {
     customerIp: "192.168.1.1",
     // paymentMethod is REQUIRED if country has payment methods available
     paymentMethod: "VISA",
+    currency: "USD",
 };
 
 const response = await fetch("/merchant/payment", {
@@ -296,21 +330,6 @@ if (result.success) {
     console.error("Payment creation failed:", result.message);
 }
 ```
-
-**Request Parameters:**
-
--   `amount` (number, required): Payment amount (check country limits for min/max)
--   `countryCode` (string, required): Country code (POL, etc.)
--   `successCallback` (string, required): URL to redirect after successful payment
--   `failureCallback` (string, required): URL to redirect after failed payment
--   `postbackUrl` (string, required): Webhook URL for payment notifications
--   `customerEmail` (string, required): Customer email address
--   `customerName` (string, required): Customer full name
--   `customerIp` (string, required): Customer IP address
--   `paymentMethod` (string, conditional): Payment method code (VISA, MASTERCARD) - **REQUIRED if country has payment methods, OPTIONAL if country has no payment methods**
--   `externalClientId` (string, optional): External client identifier
--   `paymentTimeMaxTimestamp` (number, optional): Maximum payment time timestamp
--   `paymentTimeRealtiveTimestamp` (number, optional): Relative payment time timestamp
 
 **Response:**
 
@@ -334,6 +353,10 @@ https://pay.btqfi.com/merchant/payment/{paymentId}
 ```
 
 **Purpose:** Check the current status of a payment.
+
+**Request Parameters:**
+
+-   `paymentId` (string, required): Unique identifier of the payment
 
 ```javascript
 // JavaScript example
@@ -374,9 +397,9 @@ console.log("Payment status:", status.data.status);
 | `MISSING_REQUIRED_FIELDS`      | Missing required fields                         | Required parameter not provided          | Check all required fields                      | Missing amount or customer data               |
 | `AMOUNT_LESS_THAN_MINIMUM`     | Amount is less than the minimum amount          | Amount below country minimum             | Use amount >= country's minimum amount         | Amount below country-specific minimum         |
 | `AMOUNT_GREATER_THAN_MAXIMUM`  | Amount is greater than the maximum amount       | Amount above country maximum             | Use amount <= country's maximum amount         | Amount above country-specific maximum         |
-| `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA or MASTERCARD                         | Using "PAYPAL" or other unsupported methods   |
+| `INVALID_PAYMENT_METHOD`       | Invalid payment method                          | Unsupported payment method               | Use VISA, MASTERCARD                           | Using unsupported payment method              |
 | `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       | Using lowercase or wrong format (e.g., "pol") |
-| `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     | VISA not available in specific country        |
+| `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     | Payment method not available in country       |
 | `PAYMENT_METHOD_REQUIRED`      | Payment method is required for this country     | Country requires payment method          | Provide payment method for this country        | Country has payment methods but none provided |
 | `INVALID_CURRENCY`             | Currency is invalid                             | Invalid or unsupported currency code     | Use supported currency (EUR, RUB, TRY, KZT)    | Using unsupported currency code               |
 | `INVALID_CONVERSION_VALUE`     | Invalid conversion value                        | Missing or invalid value for conversion  | Provide valid numeric value                    | Empty value or non-numeric value              |
@@ -480,10 +503,19 @@ app.post("/webhook", (req, res) => {
 
     console.log("Payment webhook received:", paymentData);
 
-    // Verify webhook signature (implement security)
     // Process payment status update
-    // Update your database
-    // Send confirmation emails, etc.
+    if (paymentData.status === "success") {
+        // Payment successful
+        // Update order status in your database
+        // Send confirmation email to customer
+    } else if (paymentData.status === "failure") {
+        // Payment failed
+        // Update order status
+        // Notify customer about failed payment
+    } else if (paymentData.status === "pending") {
+        // Payment is still processing
+        // Update order status to pending
+    }
 
     res.status(200).json({ success: true });
 });
@@ -493,7 +525,7 @@ app.post("/webhook", (req, res) => {
 
 ```json
 {
-    "status": "success", // The status of the payment could be "success"/"failure"/"pending"
+    "status": "success", // Payment status: "success"/"failure"/"pending"/"cancelled"/"expired"
     "paymentId": "<Payment id>",
     "externalClientId": "<external client id>"
 }
@@ -698,6 +730,7 @@ const paymentData = {
     customerName: "John Doe",
     customerIp: "192.168.1.1",
     paymentMethod: "VISA", // REQUIRED for Poland
+    currency: "USD", // Optional, defaults to USD if not specified
 };
 ```
 
@@ -714,6 +747,7 @@ const paymentData = {
     customerEmail: "customer@example.com",
     customerName: "John Doe",
     customerIp: "192.168.1.1",
+    currency: "EUR", // Optional, defaults to USD if not specified
     // paymentMethod omitted - OPTIONAL for this country
 };
 ```
