@@ -27,7 +27,7 @@ https://pay.btqfi.com
 -   **Minimum amount:** $15.00
 -   **Maximum amount:** $2,000.00
 -   **Supported payment methods:** VISA, MASTERCARD,
--   **Supported currencies:** USD, EUR, RUB, TRY, KZT
+-   **Supported currencies:** USD, EUR, RUB, TRY
 
 **Note:** Each country may have different minimum and maximum amounts. Check the country details endpoint for specific limits.
 
@@ -193,7 +193,7 @@ https://pay.btqfi.com/merchant/convert
 
 **Request Parameters:**
 
--   `currency` (string, required): Currency code to convert from (EUR, RUB, TRY, KZT)
+-   `currency` (string, required): Currency code to convert from (EUR, RUB, TRY)
 -   `value` (number, required): Amount to convert to USD
 
 ```javascript
@@ -212,7 +212,7 @@ console.log("Converted amount in USD:", result.data);
 
 **Request Parameters:**
 
--   `currency` (string, required): Currency code (EUR, RUB, TRY, KZT)
+-   `currency` (string, required): Currency code (EUR, RUB, TRY)
 -   `value` (number, required): Amount to convert from specified currency to USD
 
 **Response:**
@@ -294,7 +294,7 @@ https://pay.btqfi.com/merchant/payment
 -   `customerName` (string, required): Customer full name
 -   `customerIp` (string, required): Customer IP address
 -   `paymentMethod` (string, conditional): Payment method code (VISA, MASTERCARD) - required if country has payment methods
--   `currency` (string, optional): Currency code (USD, EUR, RUB, TRY, KZT) - defaults to USD
+-   `currency` (string, optional): Currency code (USD, EUR, RUB, TRY) - defaults to USD
 -   `externalClientId` (string, optional): External client identifier
 -   `paymentTimeMaxTimestamp` (number, optional): Maximum payment time timestamp
 -   `paymentTimeRealtiveTimestamp` (number, optional): Relative payment time timestamp
@@ -401,7 +401,7 @@ console.log("Payment status:", status.data.status);
 | `INVALID_COUNTRY_CODE`         | Country code is invalid                         | Invalid country code format              | Use valid country codes (POL, UKR, etc.)       | Using lowercase or wrong format (e.g., "pol") |
 | `PAYMENT_METHOD_NOT_SUPPORTED` | Payment method is not supported in this country | Payment method not available for country | Choose different payment method or country     | Payment method not available in country       |
 | `PAYMENT_METHOD_REQUIRED`      | Payment method is required for this country     | Country requires payment method          | Provide payment method for this country        | Country has payment methods but none provided |
-| `INVALID_CURRENCY`             | Currency is invalid                             | Invalid or unsupported currency code     | Use supported currency (EUR, RUB, TRY, KZT)    | Using unsupported currency code               |
+| `INVALID_CURRENCY`             | Currency is invalid                             | Invalid or unsupported currency code     | Use supported currency (EUR, RUB, TRY)         | Using unsupported currency code               |
 | `INVALID_CONVERSION_VALUE`     | Invalid conversion value                        | Missing or invalid value for conversion  | Provide valid numeric value                    | Empty value or non-numeric value              |
 | `INVALID_RATE`                 | Invalid rate                                    | Exchange rate not available              | Try again later or contact support             | Rate service unavailable                      |
 | `SOMETHING_WENT_WRONG`         | Something went wrong                            | Internal server error                    | Contact support                                | Database connection issues, server errors     |
