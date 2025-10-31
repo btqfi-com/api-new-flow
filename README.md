@@ -26,10 +26,12 @@ https://pay.btqfi.com
 
 -   **Minimum amount:** $15.00
 -   **Maximum amount:** $2,000.00
--   **Supported payment methods:** VISA, MASTERCARD,
+-   **Supported payment methods:** VISA, MASTERCARD, RUB_P2P (P2P for Russian Rubles), TUR_SAFEPAY
 -   **Supported currencies:** USD, EUR, RUB, TRY
 
 **Note:** Each country may have different minimum and maximum amounts. Check the country details endpoint for specific limits.
+
+**P2P Payments:** For Russian Ruble (RUB) payments, use the dedicated P2P endpoint (`/merchant/payment/p2p`) which automatically handles RUB_P2P payment method.
 
 ### 4. Payment Method Requirements
 
@@ -41,6 +43,16 @@ https://pay.btqfi.com
 Always check the country details endpoint first to see available payment methods.
 
 ## API Endpoints
+
+**Available Endpoints:**
+
+-   `GET /merchant/allowed-countries` - Get list of supported countries
+-   `GET /merchant/allowed-countries/{countryCode}` - Get country details
+-   `GET /merchant/convert` - Convert currency to USD
+-   `GET /merchant/methods` - Get available payment methods
+-   `POST /merchant/payment` - Create payment (card payments)
+-   `POST /merchant/payment/p2p` - Create P2P payment in RUB
+-   `GET /merchant/payment/{paymentId}` - Check payment status
 
 ### Get Available Countries
 
@@ -344,6 +356,88 @@ if (result.success) {
 }
 ```
 
+### Create P2P Payment (RUB)
+
+**Endpoint**
+
+```
+https://pay.btqfi.com/merchant/payment/p2p
+```
+
+**Purpose:** Create a new P2P payment transaction in Russian Rubles (RUB) and get payment URL.
+
+**Important:** This endpoint is specifically for P2P payments in RUB currency. The currency is automatically set to RUB and cannot be changed.
+
+**Request Parameters:**
+
+-   `amount` (number, required): Payment amount in RUB (Russian Rubles)
+-   `successCallback` (string, required): URL to redirect after successful payment
+-   `failureCallback` (string, required): URL to redirect after failed payment
+-   `postbackUrl` (string, required): Webhook URL for payment notifications
+-   `customerEmail` (string, required): Customer email address
+-   `customerName` (string, required): Customer full name
+-   `customerIp` (string, required): Customer IP address
+-   `countryCode` (string, optional): Three-letter country code - defaults to "RUS" if not provided
+-   `externalClientId` (string, optional): External client identifier
+-   `paymentTimeMaxTimestamp` (number, optional): Maximum payment time timestamp
+-   `paymentTimeRealtiveTimestamp` (number, optional): Relative payment time timestamp
+
+**Note:** Unlike the regular payment endpoint:
+
+-   Currency is automatically set to **RUB** (cannot be changed)
+-   Payment method is automatically set to **RUB_P2P** (cannot be changed)
+-   Country defaults to **RUS** if not specified
+-   Amount is specified in **RUB**, not USD
+
+```javascript
+// JavaScript example
+const paymentData = {
+    amount: 10000, // amount in RUB (Russian Rubles)
+    successCallback: "https://yoursite.com/success",
+    failureCallback: "https://yoursite.com/failure",
+    postbackUrl: "https://yoursite.com/webhook",
+    customerEmail: "customer@example.com",
+    customerName: "Иван Иванов",
+    customerIp: "192.168.1.1",
+    countryCode: "RUS", // Optional, defaults to RUS
+};
+
+const response = await fetch("/merchant/payment/p2p", {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify(paymentData),
+});
+
+const result = await response.json();
+
+if (result.success) {
+    // Redirect user to payment page
+    window.location.href = result.data.paymentUrl;
+} else {
+    console.error("Payment creation failed:", result.message);
+}
+```
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "data": {
+        "paymentId": "payment_123456",
+        "paymentUrl": "https://payment-gateway.com/pay/123456",
+        "id": "1"
+    }
+}
+```
+
+**Error Codes:**
+
+Same as the regular payment endpoint, with additional validation:
+
+-   The amount will be validated against country-specific limits after conversion to USD
+-   All standard error codes apply (see Error Handling section)
+
 ### Check Payment Status
 
 **Endpoint**
@@ -379,6 +473,7 @@ console.log("Payment status:", status.data.status);
         "paymentId": "payment_123456",
         "status": "completed",
         "amount": 100.0,
+        "amountUsd": 100.0,
         "createdAt": "2024-01-01T12:00:00Z",
         "updatedAt": "2024-01-01T12:05:00Z"
     }
@@ -784,5 +879,35 @@ async function createMinimalPayment(countryCode, amount, customerData) {
     }
 
     return await createPayment(paymentData);
+}
+```
+
+### Example 4: P2P Payment in Russian Rubles
+
+```javascript
+// P2P payment in RUB - simplified, no need to specify currency or payment method
+const p2pPaymentData = {
+    amount: 10000, // 10,000 RUB
+    successCallback: "https://yoursite.com/success",
+    failureCallback: "https://yoursite.com/failure",
+    postbackUrl: "https://yoursite.com/webhook",
+    customerEmail: "customer@example.ru",
+    customerName: "Иван Петров",
+    customerIp: "192.168.1.1",
+    // countryCode is optional - defaults to "RUS"
+    // currency and paymentMethod are set automatically
+};
+
+const response = await fetch("/merchant/payment/p2p", {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify(p2pPaymentData),
+});
+
+const result = await response.json();
+
+if (result.success) {
+    console.log("P2P payment created:", result.data.paymentId);
+    window.location.href = result.data.paymentUrl;
 }
 ```
