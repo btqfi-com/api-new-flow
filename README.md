@@ -377,7 +377,6 @@ https://pay.btqfi.com/merchant/payment/p2p
 -   `customerEmail` (string, required): Customer email address
 -   `customerName` (string, required): Customer full name
 -   `customerIp` (string, required): Customer IP address
--   `countryCode` (string, optional): Three-letter country code - defaults to "RUS" if not provided
 -   `externalClientId` (string, optional): External client identifier
 -   `paymentTimeMaxTimestamp` (number, optional): Maximum payment time timestamp
 -   `paymentTimeRealtiveTimestamp` (number, optional): Relative payment time timestamp
@@ -385,7 +384,6 @@ https://pay.btqfi.com/merchant/payment/p2p
 **Note:** Unlike the regular payment endpoint:
 
 -   Currency is automatically set to **RUB** (cannot be changed)
--   Payment method is automatically set to **RUB_P2P** (cannot be changed)
 -   Country defaults to **RUS** if not specified
 -   Amount is specified in **RUB**, not USD
 
@@ -399,7 +397,6 @@ const paymentData = {
     customerEmail: "customer@example.com",
     customerName: "Иван Иванов",
     customerIp: "192.168.1.1",
-    countryCode: "RUS", // Optional, defaults to RUS
 };
 
 const response = await fetch("/merchant/payment/p2p", {
@@ -894,8 +891,6 @@ const p2pPaymentData = {
     customerEmail: "customer@example.ru",
     customerName: "Иван Петров",
     customerIp: "192.168.1.1",
-    // countryCode is optional - defaults to "RUS"
-    // currency and paymentMethod are set automatically
 };
 
 const response = await fetch("/merchant/payment/p2p", {
