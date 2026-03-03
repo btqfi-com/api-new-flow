@@ -39,7 +39,7 @@ Your merchant account can be configured in **test mode** for integration testing
 
 **How test mode works:**
 
--   All payments are routed to a **test payment gateway** (Telestore DEV server)
+-   All payments are routed to a **test payment gateway** 
 -   Transactions are created and processed normally, but marked with `isTestMode: true`
 -   **Payouts are not processed** — `payOut` is always `0` and merchant balance is not updated
 -   Webhooks (postback) are still sent normally — use this to verify your webhook integration
