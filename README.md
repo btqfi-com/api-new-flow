@@ -33,7 +33,25 @@ https://pay.btqfi.com
 
 **P2P Payments:** For Russian Ruble (RUB) payments, use the dedicated P2P endpoint (`/merchant/payment/p2p`) which automatically handles RUB_P2P payment method.
 
-### 4. Payment Method Requirements
+### 4. Test Mode (Dev Mode)
+
+Your merchant account can be configured in **test mode** for integration testing. Contact your admin to enable it.
+
+**How test mode works:**
+
+-   All payments are routed to a **test payment gateway** (Telestore DEV server)
+-   Transactions are created and processed normally, but marked with `isTestMode: true`
+-   **Payouts are not processed** — `payOut` is always `0` and merchant balance is not updated
+-   Webhooks (postback) are still sent normally — use this to verify your webhook integration
+-   Payment status flow is identical to production: `created` → `invoice_created` → `success`/`failed`/`expired`
+
+**Important:**
+
+-   No code changes are required on your side — test mode is toggled per-merchant in the admin panel
+-   All API endpoints and request/response formats remain exactly the same
+-   Once integration testing is complete, ask your admin to disable test mode to switch to production payments
+
+### 5. Payment Method Requirements
 
 **Important:** Payment method requirements depend on the country:
 
@@ -806,7 +824,17 @@ async function monitorPayment(paymentId) {
 }
 ```
 
-## Test Data Examples
+## Testing Your Integration
+
+If your merchant account has **test mode** enabled, all the examples below will automatically use the test payment gateway. No code changes needed — simply use the same endpoints and parameters.
+
+To verify test mode is active, check with your admin or create a test payment and confirm:
+
+-   The payment processes through the test gateway
+-   The `payOut` value is `0` in the admin panel
+-   Your webhook receives the postback notification as expected
+
+## Payment Examples
 
 ### Example 1: Country with Payment Methods (Payment Method Required)
 
@@ -891,6 +919,8 @@ const p2pPaymentData = {
     customerEmail: "customer@example.ru",
     customerName: "Иван Петров",
     customerIp: "192.168.1.1",
+    // countryCode is optional - defaults to "RUS"
+    // currency and paymentMethod are set automatically
 };
 
 const response = await fetch("/merchant/payment/p2p", {
